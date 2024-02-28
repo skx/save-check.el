@@ -21,10 +21,13 @@ Save this file to a directory which is included upon your load-path, and then ad
 (require 'save-check)
 ```
 
-The configuration is contained within the `save-check-config` list, and contains pairs:
+The configuration is contained within the `save-check-config` list.
 
-* The name of the major-mode to operate within.
-* The process to execute to run the syntax-check.
+There are three possible keys that can be set within the list-items:
+
+* `:mode` - The name of the major-mode to operate within.
+* `:exec` - The process to execute to run the syntax-check.
   * `%s` will be replaced with the path to the filename to check.
+* `:cond` - An optional config that may be used to disable a check.
 
 New entries may be added as you would expect.
