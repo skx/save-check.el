@@ -5,10 +5,14 @@
 ;; The configuration we support
 (setq save-check-config
       '(
-        (yaml-mode  . "sysbox validate-yaml %s")
-        (xml-mode   . "sysbox validate-xml %s")
-        (json-mode  . "sysbox validate-json %s")
-        (cperl-mode . "perl -wc -I. %s")
+        (yaml-mode   . "sysbox validate-yaml %s")
+        (xml-mode    . "sysbox validate-xml %s")
+        (json-mode   . "sysbox validate-json %s")
+        (cperl-mode  . "perl -wc -I. %s")
+
+        ;; This avoids creating .pyc files, which would happen if we had
+        ;; used the more natural/obvious "python3 -m py_compile %s" approach
+        (python-mode . "python3 -c 'import ast; ast.parse(open(\"%s\").read())'")
        ))
 
 
