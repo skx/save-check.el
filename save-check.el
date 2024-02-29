@@ -7,30 +7,30 @@
       '(
 
         (:mode json-mode
-         :exec "sysbox validate-json %s"
+         :exec "sysbox validate-json %f"
          :cond (executable-find "sysbox"))
 
         (:mode nxml-mode
-         :exec "sysbox validate-xml %s"
+         :exec "sysbox validate-xml %f"
          :cond (executable-find "sysbox"))
 
         ;; This avoids creating .pyc files, which would happen if we had
         ;; used the more natural/obvious "python3 -m py_compile %s" approach
         (:mode python-mode
-         :exec "python3 -c 'import ast; ast.parse(open(\"%s\").read())'"
+         :exec "python3 -c 'import ast; ast.parse(open(\"%f\").read())'"
          :cond (executable-find "python3"))
 
         (:mode sh-mode
-         :exec "shellcheck %s"
+         :exec "shellcheck %f"
          :cond (executable-find "shellcheck"))
 
         (:mode terraform-mode
-         :exec "tflint --no-color --chdir %s"
+         :exec "tflint --no-color --chdir %d"
          :cond (executable-find "tflint")
          :path t)
 
         (:mode yaml-mode
-         :exec "sysbox validate-yaml %s"
+         :exec "sysbox validate-yaml %f"
          :cond (executable-find "sysbox"))
        ))
 
@@ -39,7 +39,7 @@
   "Run the save-check if the current buffer has a configured command.
 
 The commands are contained within the list `save-check-config', and those
-commands will have '%s' replaced with the path to the saved file."
+commands will have parameters replaced appropriately by `save-check-run-command'."
   (interactive)
   (mapc #'(lambda (entry)
             (let ((exec (plist-get entry :exec))
@@ -55,19 +55,21 @@ commands will have '%s' replaced with the path to the saved file."
                 (setq run t) ;; otherwise, no condition set, we run
                 )
 
+              ;; If we're to run, and the mode is either a) the exact mode, or b) derived from that mode
+              ;; then run.
               (if (and run (or (derived-mode-p mode) (eq major-mode  mode)))
-                  (save-check-run-command exec path))))
+                  (save-check-run-command exec))))
         save-check-config)
   )
 
 
-(defun save-check-run-command(cmd directory)
-  "Execute the specified command, with the name of the buffers file as an argument.
+(defun save-check-run-command(cmd)
+  "Execute the specified command, expanding parameters as expected:
 
-The directory argument, if true, will cause the command to be given the path to the directory containing the buffers' file.
+`%f' will be replaced with the path to the file.
+`%d' will be replaced with the directory containing the file.
 
-If the command exists with a zero-return code then nothing happens, otherwise the output will be shown."
-  (interactive)
+If the command exists with a zero-return code then nothing happens, otherwise the output will be shown in a popup-buffer."
 
   ;; get, and kill, any existing buffer.
   (with-current-buffer (get-buffer-create "*save-check*")
@@ -75,14 +77,14 @@ If the command exists with a zero-return code then nothing happens, otherwise th
 
   ;; setup variables
   (let ((buffer (get-buffer-create "*save-check*"))
-        (exec   "")
-        (ret nil))
+        (exec   cmd)
+        (ret    nil))
 
-    ;; If the directory arg is true use the directory-name
-    ;; otherwise we'll execute with the filename.
-    (if directory
-        (setq exec (format cmd (file-name-directory buffer-file-name)))
-      (setq exec (format cmd buffer-file-name)))
+    ;; Expand the string we're to execute.
+    ;;  %f -> file
+    (setq exec (string-replace "%f" buffer-file-name exec))
+    ;;  %d -> directory
+    (setq exec (string-replace "%d" (file-name-directory buffer-file-name) exec))
 
     ;; call the process
     (setq ret (call-process-shell-command exec nil buffer nil))
