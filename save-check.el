@@ -24,6 +24,11 @@
          :exec "shellcheck %s"
          :cond (executable-find "shellcheck"))
 
+        (:mode terraform-mode
+         :exec "tflint --no-color --chdir %s"
+         :cond (executable-find "tflint")
+         :path t)
+
         (:mode yaml-mode
          :exec "sysbox validate-yaml %s"
          :cond (executable-find "sysbox"))
@@ -40,6 +45,7 @@ commands will have '%s' replaced with the path to the saved file."
             (let ((exec (plist-get entry :exec))
                   (cnd (plist-get entry :cond))
                   (mode (plist-get entry :mode))
+                  (path (plist-get entry :path))
                   (run nil))
 
               ;; If there is a condition set
@@ -50,33 +56,46 @@ commands will have '%s' replaced with the path to the saved file."
                 )
 
               (if (and run (or (derived-mode-p mode) (eq major-mode  mode)))
-                  (save-check-run-command exec))))
+                  (save-check-run-command exec path))))
         save-check-config)
   )
 
 
-(defun save-check-run-command(cmd)
+(defun save-check-run-command(cmd directory)
   "Execute the specified command, with the name of the buffers file as an argument.
+
+The directory argument, if true, will cause the command to be given the path to the directory containing the buffers' file.
 
 If the command exists with a zero-return code then nothing happens, otherwise the output will be shown."
   (interactive)
+
+  ;; get, and kill, any existing buffer.
   (with-current-buffer (get-buffer-create "*save-check*")
     (kill-buffer))
+
+  ;; setup variables
   (let ((buffer (get-buffer-create "*save-check*"))
+        (exec   "")
         (ret nil))
 
-    ;; empty the buffer
-    (with-current-buffer buffer
-                 (erase-buffer))
+    ;; If the directory arg is true use the directory-name
+    ;; otherwise we'll execute with the filename.
+    (if directory
+        (setq exec (format cmd (file-name-directory buffer-file-name)))
+      (setq exec (format cmd buffer-file-name)))
 
     ;; call the process
-    (setq ret (call-process-shell-command (format cmd buffer-file-name) nil buffer nil))
-  (if (= 0 ret)
-      (kill-buffer buffer)
-    (progn
-      (pop-to-buffer buffer)
-      (special-mode)
-      ))))
+    (setq ret (call-process-shell-command exec nil buffer nil))
+
+    ;; if the return code was OK, kill the results.
+    ;; otherwise pop to the buffer, and set it to be "special mode"
+    ;; which has suitable keybindings.
+    (if (= 0 ret)
+        (kill-buffer buffer)
+      (progn
+        (pop-to-buffer buffer)
+        (special-mode)
+        ))))
 
 
 ;; Add the hook
