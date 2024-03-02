@@ -24,7 +24,20 @@ Once enabled a global hook is added to `after-save-hook`, which will trigger the
 Save this file to a directory which is included upon your load-path, and then add:
 
 ```
+;; Load the file
 (require 'save-check)
+
+;; Enable it
+(global-save-check-mode 1)
+```
+
+If you're using `use-package` you can configure it like so:
+
+```
+(use-package save-check
+  :defer 2
+  :config
+    (global-save-check-mode t))
 ```
 
 
