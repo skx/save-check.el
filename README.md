@@ -63,4 +63,5 @@ There are some other variables which can be set though:
 * `save-check-buffer-name`
   * Configures the buffer-name of any failing results which are shown.
 * `save-check-show-eval`
-  * If `:eval` is used to execute a lisp expression on a particular mode then the output is discarded by default.  Set this value to a non-nil value to see it.
+  * If `:eval` is used to execute a lisp expression on a particular mode then the output is discarded by default.
+  * Set this value to a non-nil value to see it.

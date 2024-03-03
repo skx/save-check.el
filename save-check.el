@@ -6,6 +6,10 @@
 (defvar save-check-config
       '(
 
+        (:mode cperl-mode
+         :exec "perl -wc -I. %s"
+         :cond (executable-find "perl"))
+
         (:mode dockerfile-mode
          :exec "hadolint --no-color %f"
          :cond (executable-find "hadolint"))
@@ -17,6 +21,10 @@
         (:mode nxml-mode
          :exec "sysbox validate-xml %f"
          :cond (executable-find "sysbox"))
+
+        (:mode perl-mode
+         :exec "perl -wc -I. %s"
+         :cond (executable-find "perl"))
 
         ;; This avoids creating .pyc files, which would happen if we had
         ;; used the more natural/obvious "python3 -m py_compile %s" approach
@@ -122,7 +130,7 @@ if a lisp expression is given under the `:eval' key it will be invoked by `save-
               ;; If we have a lisp expression, run that.
               ;; If we have a command, run that.
               ;; This allows both, or neither, to operate
-              (if (and run (or (derived-mode-p mode) (eq major-mode  mode)))
+              (if (and run (or (derived-mode-p mode) (eq major-mode mode)))
                   (progn
                     (if lisp (save-check-run-lisp lisp))
                     (if exec (save-check-run-command exec))))))
