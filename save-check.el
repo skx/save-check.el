@@ -54,7 +54,9 @@
 (defvar save-check-config
       '(
 
-        (:mode cperl-mode
+        ;; Here we see :mode is actually set to a list
+        ;; so this linter will run for both modes.
+        (:mode (cperl-mode perl-mode)
          :exec "perl -wc -I. %f"
          :cond (executable-find "perl"))
 
@@ -69,10 +71,6 @@
         (:mode nxml-mode
          :exec "sysbox validate-xml %f"
          :cond (executable-find "sysbox"))
-
-        (:mode perl-mode
-         :exec "perl -wc -I. %s"
-         :cond (executable-find "perl"))
 
         ;; This avoids creating .pyc files, which would happen if we had
         ;; used the more natural/obvious "python3 -m py_compile %s" approach
@@ -164,7 +162,22 @@ if a lisp expression is given under the `:eval' key it will be invoked by `save-
                   (mode (plist-get entry :mode))
                   (lisp (plist-get entry :eval))
                   (path (plist-get entry :path))
-                  (run nil))
+                  (run nil)
+                  (tmp nil))
+
+              ;; Make tmp a list of the modes from the :mode parameter.
+              ;;
+              ;; We want to do this so we can have either of these work:
+              ;;
+              ;;   :mode foo-mode
+              ;;   :mode (cperl-mode perl-mode)
+              ;;
+              ;; We want to process these identically, so we'll just
+              ;; pretend we always had a list - and tmp will have that.
+              ;;
+              (if (listp mode)
+                  (setq tmp mode)        ;; already a list
+                (setq tmp (list mode)))  ;; make a list (of one element)
 
               ;; If there is a condition set
               (if cnd
@@ -173,18 +186,24 @@ if a lisp expression is given under the `:eval' key it will be invoked by `save-
                 (setq run t) ;; otherwise, no condition set, we run
                 )
 
-              ;; If we're to run, and the mode is either a) the exact mode, or b) derived from that mode
-              ;; then do so.
-              ;; If we have a lisp expression, run that.
-              ;; If we have a command, run that.
-              ;; This allows both, or neither, to operate
-              (if (and run (or (derived-mode-p mode) (eq major-mode mode)))
-                  (progn
-                    (if lisp (save-check-run-lisp lisp))
-                    (if exec (save-check-run-command exec))))))
-        save-check-config)
-  )
-
+              ;; If we're to run, and the mode is either:
+              ;;   a) the exact mode
+              ;;   b) derived from that mode
+              ;;
+              ;; We have a list of modes, so we'll test each one, but
+              ;; we'll stop after the first - by setting run to nil
+              ;;
+              (mapc #'(lambda (m)
+                        (if (and run (or (derived-mode-p m) (eq major-mode m)))
+                            (progn
+                              (setq run nil)                             ;; only lint once
+                              (if lisp (save-check-run-lisp lisp))       ;; call :eval
+                              (if exec (save-check-run-command exec))))) ;; call :exec
+                    tmp)
+              )
+            )
+            save-check-config)
+        )
 
 
 (defun save-check-run-lisp(expr)
