@@ -21,7 +21,7 @@ Once enabled a global hook is added to `after-save-hook`, which will trigger the
 
 ## Installation
 
-Save this file to a directory which is included upon your load-path, and then add:
+The traditional way to install works just fine, save this file to a directory which is included upon your load-path, and then load it by adding the following to your init file:
 
 ```
 ;; Load the file
@@ -31,13 +31,33 @@ Save this file to a directory which is included upon your load-path, and then ad
 (global-save-check-mode 1)
 ```
 
-If you're using `use-package` you can configure it like so:
+If you're using `use-package` you can still download manually, and load/configure it like so:
 
 ```
 (use-package save-check
   :defer 2
   :config
     (global-save-check-mode t))
+```
+
+If you have `use-package` and `straight` present then the following snippet will clone the repository at run-time, and allow you to use the package without any manual action:
+
+```lisp
+(use-package save-check
+  :straight (:host github :repo "skx/save-check.el")
+  :config
+    (global-save-check-mode t))
+```
+
+A similar approach [use-package with vc](https://tony-zorman.com/posts/use-package-vc.html) should work on Emacs 30 out-of-the-box, again cloning the repository at run-time, and keeping things up to date automatically:
+
+```lisp
+(use-package save-check
+    :vc
+      (:url "https://github.com/skx/save-check.el.git"
+       :rev :newest)
+    :config
+      (global-save-check-mode t))
 ```
 
 
